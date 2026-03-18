@@ -1,0 +1,11 @@
+{{- $ns := include "ns.name" . -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+spec:
+  description: "Default deny — bloqueia todo ingress e egress"
+  endpointSelector: {}

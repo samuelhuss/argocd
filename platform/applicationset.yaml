@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-namespaces
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: "https://github.com/claro-digital/k8s-multi-tenancy.git"
+        revision: HEAD
+        files:
+          - path: "platform/namespaces/*.yaml"
+
+  template:
+    metadata:
+      name: "ns-{{ .team }}-{{ .project }}-{{ .environment }}"
+      namespace: argocd
+      labels:
+        claro.com.br/managed-by: "gitops"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: "https://github.com/claro-digital/k8s-multi-tenancy.git"
+        targetRevision: HEAD
+        path: "platform/base"
+        helm:
+          releaseName: "{{ .team }}-{{ .project }}-{{ .environment }}"
+          valueFiles:
+            - "../namespaces/{{ .path.filename }}"
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: "{{ .team }}-{{ .project }}-{{ .environment }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,23 @@
+{{- if .Values.networkPolicies.allowGatewayAPI -}}
+{{- $ns := include "ns.name" . -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-api
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+spec:
+  description: "Allow ingress from Gateway API controller"
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Values.gatewayNamespace | quote }}
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "8443"
+              protocol: TCP
+{{- end }}

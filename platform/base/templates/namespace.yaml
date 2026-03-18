@@ -1,0 +1,7 @@
+{{- $ns := include "ns.name" . -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}

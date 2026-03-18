@@ -1,0 +1,12 @@
+# ── Campos obrigatórios ───────────────────────────────────────────────────
+team: ""                  # ex: squad-payments
+owner: ""                 # ex: squad-payments@claro.com.br
+project: ""               # ex: api-mvp
+environment: "dev"        # dev | staging | production
+costCenter: ""            # ex: cc-12345
+
+# ── Network Policies ─────────────────────────────────────────────────────
+networkPolicies:
+  allowGatewayAPI: false  # toggle — habilite se precisa receber tráfego via Gateway API
+
+gatewayNamespace: "gateway-system"
