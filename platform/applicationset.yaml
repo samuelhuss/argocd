@@ -24,7 +24,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: "https://github.com/claro-digital/k8s-multi-tenancy.git"
+        repoURL: "https://github.com/samuelhuss/argocd.git"
         targetRevision: HEAD
         path: "platform/base"
         helm:
