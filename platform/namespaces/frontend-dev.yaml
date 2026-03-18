@@ -1,8 +1,8 @@
-team: "squad-frontend"
-owner: "squad-frontend@claro.com.br"
+team: "atlantis"
+owner: "atlantis-frontend@claro.com.br"
 project: "bff"
 environment: "dev"
-costCenter: "cc-54321"
+costCenter: "finops-b2c"
 
 networkPolicies:
-  allowGatewayAPI: true
+  allowGatewayAPI: false
