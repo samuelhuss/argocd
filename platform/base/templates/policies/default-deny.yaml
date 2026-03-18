@@ -7,5 +7,6 @@ metadata:
   labels:
     {{- include "ns.labels" . | nindent 4 }}
 spec:
-  description: "Default deny — bloqueia todo ingress e egress"
+  description: "Default deny — bloqueia todo ingress"
   endpointSelector: {}
+  ingress: []
