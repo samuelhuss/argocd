@@ -1,8 +1,0 @@
-team: "interraform"
-owner: "interraform-vini-claro.com.br"
-project: "clarotv"
-environment: "dev"
-costCenter: "finops-b2c-test"
-
-networkPolicies:
-  allowGatewayAPI: true
