@@ -5,7 +5,8 @@ metadata:
   name: default-deny
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.policy.labels" (dict "root" . "policyName" "default-deny") | nindent 4 }}
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "default-deny"
 spec:
   description: "Default deny — bloqueia todo ingress"
   endpointSelector: {}
