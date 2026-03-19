@@ -5,4 +5,4 @@ environment: "stg"
 costCenter: "finops-b2c"
 
 networkPolicies:
-  allowGatewayAPI: false
+  allowGatewayAPI: true
