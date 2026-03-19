@@ -1,8 +1,0 @@
-team: "teste"
-owner: "manchester-vini-claro.com.br"
-project: "onemind"
-environment: "dev"
-costCenter: "finops-b2c-test"
-
-networkPolicies:
-  allowGatewayAPI: false
