@@ -1,0 +1,8 @@
+team: "manchester"
+owner: "manchester-vini-claro.com.br"
+project: "onemind"
+environment: "dev"
+costCenter: "finops-b2c"
+
+networkPolicies:
+  allowGatewayAPI: false
