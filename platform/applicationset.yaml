@@ -12,7 +12,7 @@ spec:
         revision: HEAD
         files:
           - path: "platform/namespaces/*.yaml"
-
+          - path: "platform/namespaces/*.yml"
   template:
     metadata:
       name: "ns-{{ .team }}-{{ .project }}-{{ .environment }}"
