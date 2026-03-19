@@ -1,0 +1,66 @@
+name: Validate Namespace File Name
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  filename-check:
+    name: Filename Check (kebab-case)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine base SHA
+        id: base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate changed file names
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ steps.base.outputs.sha }}"
+          HEAD_SHA="${{ github.sha }}"
+          regex='^[a-z0-9]+(-[a-z0-9]+)*\\.yaml$'
+
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            mapfile -t changed < <(git ls-files "platform/namespaces/*")
+          else
+            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/*")
+          fi
+
+          if [[ ${#changed[@]} -eq 0 ]]; then
+            echo "No changes in platform/namespaces"
+            exit 0
+          fi
+
+          failed=0
+          for file in "${changed[@]}"; do
+            [[ -z "$file" ]] && continue
+            name="${file##*/}"
+
+            if [[ ! "$name" =~ $regex ]]; then
+              echo "ERROR: $file has invalid name. Use lowercase kebab-case (example: squad-payments-dev.yaml)."
+              failed=1
+            fi
+          done
+
+          if [[ $failed -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Filename validation passed."

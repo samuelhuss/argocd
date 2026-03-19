@@ -1,0 +1,70 @@
+name: Validate Namespace File Extension
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  extension-check:
+    name: Extension Check (.yaml only)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine base SHA
+        id: base
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate changed files extension
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ steps.base.outputs.sha }}"
+          HEAD_SHA="${{ github.sha }}"
+
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            mapfile -t changed < <(git ls-files "platform/namespaces/*")
+          else
+            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/*")
+          fi
+
+          if [[ ${#changed[@]} -eq 0 ]]; then
+            echo "No changes in platform/namespaces"
+            exit 0
+          fi
+
+          failed=0
+          for file in "${changed[@]}"; do
+            [[ -z "$file" ]] && continue
+
+            if [[ "$file" == *.yml ]]; then
+              echo "ERROR: $file uses .yml. Use .yaml."
+              failed=1
+              continue
+            fi
+
+            if [[ "$file" != *.yaml ]]; then
+              echo "ERROR: $file has invalid extension. Only .yaml is allowed."
+              failed=1
+            fi
+          done
+
+          if [[ $failed -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Extension validation passed."
