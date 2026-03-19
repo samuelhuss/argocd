@@ -1,8 +1,0 @@
-team: "dynamok8s"
-owner: "dynamo-k8s-claro.com.br"
-project: "api"
-environment: "stg"
-costCenter: "finops-b2c"
-
-networkPolicies:
-  allowGatewayAPI: true
