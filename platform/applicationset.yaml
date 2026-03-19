@@ -8,7 +8,7 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   generators:
     - git:
-        repoURL: "https://github.com/claro-digital/k8s-multi-tenancy.git"
+        repoURL: "https://github.com/samuelhuss/argocd.git"
         revision: HEAD
         files:
           - path: "platform/namespaces/*.yaml"
