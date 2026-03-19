@@ -5,7 +5,7 @@ metadata:
   name: allow-intra-namespace
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.labels" . | nindent 4 }}
+    {{- include "ns.policy.labels" (dict "root" . "policyName" "allow-intra-namespace") | nindent 4 }}
 spec:
   description: "Allow all traffic within the same namespace"
   endpointSelector: {}
