@@ -1,0 +1,8 @@
+team: "squad-payments"
+owner: "squad-payments_claro_com_br"
+project: "api-mvp"
+environment: "dev"
+costCenter: "cc-12345"
+
+networkPolicies:
+  allowGatewayAPI: false
