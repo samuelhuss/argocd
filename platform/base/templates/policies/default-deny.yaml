@@ -5,7 +5,7 @@ metadata:
   name: default-deny
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.labels" . | nindent 4 }}
+    {{- include "ns.policy.labels" (dict "root" . "policyName" "default-deny") | nindent 4 }}
 spec:
   description: "Default deny — bloqueia todo ingress"
   endpointSelector: {}
