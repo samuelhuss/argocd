@@ -6,7 +6,8 @@ metadata:
   name: allow-gateway-api
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.policy.labels" (dict "root" . "policyName" "allow-gateway-api") | nindent 4 }}
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "allow-gateway-api"
 spec:
   description: "Allow ingress from Gateway API controller"
   endpointSelector: {}
