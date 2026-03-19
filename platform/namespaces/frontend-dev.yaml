@@ -1,8 +1,0 @@
-team: "atlantis"
-owner: "atlantis-frontend-claro.com.br"
-project: "bff"
-environment: "dev"
-costCenter: "finops-b2c"
-
-networkPolicies:
-  allowGatewayAPI: false
