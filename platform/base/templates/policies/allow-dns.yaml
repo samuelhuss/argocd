@@ -5,7 +5,7 @@ metadata:
   name: allow-dns
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.labels" . | nindent 4 }}
+    {{- include "ns.policy.labels" (dict "root" . "policyName" "allow-dns") | nindent 4 }}
 spec:
   description: "Allow DNS resolution (UDP/TCP 53)"
   endpointSelector: {}
