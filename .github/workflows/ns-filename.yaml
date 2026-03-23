@@ -39,7 +39,7 @@ jobs:
 
           BASE_SHA="${{ steps.base.outputs.sha }}"
           HEAD_SHA="${{ github.sha }}"
-          regex='^[a-z0-9]+(-[a-z0-9]+)*\\.yaml$'
+          regex='^[a-z0-9]+-[a-z0-9]+-(dev|hml|prod)\.yaml$'
 
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             mapfile -t changed < <(git ls-files "platform/namespaces/*")
