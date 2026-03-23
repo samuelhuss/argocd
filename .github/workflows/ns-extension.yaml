@@ -1,6 +1,12 @@
 name: Validate Namespace File Extension
 
-on: push
+on:
+  push:
+    paths:
+      - 'platform/namespaces/**'
+  pull_request:
+    paths:
+      - 'platform/namespaces/**'
 
 jobs:
   extension-check:
