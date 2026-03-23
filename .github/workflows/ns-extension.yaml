@@ -1,14 +1,6 @@
 name: Validate Namespace File Extension
 
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
+on: push
 
 jobs:
   extension-check:
@@ -40,9 +32,9 @@ jobs:
           HEAD_SHA="${{ github.sha }}"
 
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-            mapfile -t changed < <(git ls-files "platform/namespaces/**")
+            mapfile -t changed < <(git ls-files "platform/namespaces/*")
           else
-            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/**")
+            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/*")
           fi
 
           if [[ ${#changed[@]} -eq 0 ]]; then
