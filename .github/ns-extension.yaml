@@ -1,11 +1,11 @@
 name: Validate Namespace File Extension
 
-on: 
+on:
+  pull_request:
   push:
-    branches:
-      - main
-    paths:
-      - 'platform/namespaces/**'
+
+permissions:
+  contents: read
 
 jobs:
   extension-check:
@@ -37,9 +37,9 @@ jobs:
           HEAD_SHA="${{ github.sha }}"
 
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-            mapfile -t changed < <(git ls-files "platform/namespaces/*")
+            mapfile -t changed < <(git ls-files "platform/namespaces/**")
           else
-            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/*")
+            mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- "platform/namespaces/**")
           fi
 
           if [[ ${#changed[@]} -eq 0 ]]; then
