@@ -2,9 +2,11 @@ name: Validate Namespace File Name
 
 on:
   push:
-    branches: [ "main" ]
+    paths:
+      - 'platform/namespaces/**'
   pull_request:
-    branches: [ "main" ]
+    paths:
+      - 'platform/namespaces/**'
 
 permissions:
   contents: read
