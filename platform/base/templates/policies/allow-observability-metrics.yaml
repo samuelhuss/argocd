@@ -17,7 +17,7 @@ metadata:
   namespace: {{ $ns }}
   labels:
     {{- include "ns.labels" $root | nindent 4 }}
-    claro.com.br/policy-name: {{ $name | quote }}
+    claro.com.br/policy-name: "allow-observability-metrics"
 spec:
   description: "Allow metrics scraping from observability namespace"
   endpointSelector: {}
