@@ -8,5 +8,117 @@ costCenter: ""            # ex: cc-12345
 # ── Network Policies ─────────────────────────────────────────────────────
 networkPolicies:
   allowGatewayAPI: false  # toggle — habilite se precisa receber tráfego via Gateway API
+  # Modo avancado opcional para multiplas policies de Gateway API:
+  allowGatewayAPIPolicies: []
+  # Exemplo:
+  # allowGatewayAPIPolicies:
+  #   - name: allow-gateway-api-public
+  #     namespace: gateway-system
+  #   - name: allow-gateway-api-internal
+  #     namespace: gateway-internal
+  #     ports: [8080]
+
+  # Modo simples: libera egress para internet em portas comuns (toEntities: world)
+  # Para a maioria dos casos, basta ligar enabled.
+  allowCommonEgress:
+    enabled: false
+    ports: [443]
+    protocol: TCP
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-common-egress-web
+    #     ports: [80, 443]
+
+  # Permite egress para endpoints externos especificos (FQDN/CIDR/IP)
+  allowEgress:
+    enabled: false
+    defaultPorts: [443]
+    protocol: TCP
+    endpoints: []
+    # Exemplo:
+    # endpoints:
+    #   - "api.exemplo.com"
+    #   - "1.2.3.4"
+    #   - "10.20.30.0/24"
+    # Ou modo avancado por item:
+    #   - endpoint: api.exemplo.com
+    #     type: fqdn   # opcional: fqdn|ip|cidr (auto-detect se omitir)
+    #     ports: [443]
+    #     protocol: TCP
+    # Opcional: multiplas policies separadas (1 item = 1 CiliumNetworkPolicy)
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-egress-pagamentos
+    #     endpoints: ["payments.exemplo.com"]
+    #   - name: allow-egress-fraude
+    #     endpoints: ["fraud.exemplo.com"]
+
+  # Permite comunicacao cross-namespace a partir de namespaces especificos
+  allowIngressFromNamespaces:
+    enabled: false
+    namespaces: []
+    policies: []
+    # Exemplo:
+    # namespaces: ["gateway-system", "shared-services"]
+    # policies:
+    #   - name: allow-ingress-shared
+    #     namespaces: ["shared-services"]
+    #   - name: allow-ingress-observability
+    #     namespaces: ["observability"]
+
+  # Permite ingress de CIDRs especificos
+  allowIngressFromCIDRs:
+    enabled: false
+    cidrs: []
+    policies: []
+    # Exemplo:
+    # cidrs: ["10.0.0.0/8", "192.168.10.0/24"]
+    # policies:
+    #   - name: allow-vpn
+    #     cidrs: ["10.10.0.0/16"]
+    #   - name: allow-corp-proxy
+    #     cidrs: ["172.20.100.10/32"]
+
+  # Preset para observabilidade: libera scrape de metricas do namespace de observability
+  allowObservabilityMetrics:
+    enabled: false
+    namespace: observability
+    ports: [9090]
+    protocol: TCP
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-metrics-observability
+    #     namespace: observability
+    #     ports: [9090]
+    #   - name: allow-metrics-sre
+    #     namespace: sre-observability
+    #     ports: [9090, 9100]
+
+  # Modo custom simples (sem escrever YAML completo de Cilium)
+  # Cada item da lista gera 1 CiliumNetworkPolicy separada.
+  # Tipos suportados:
+  # - ingressNamespaces: exige namespaces
+  # - ingressCIDRs: exige cidrs
+  # - egressEndpoints: exige endpoints (FQDN/IP/CIDR)
+  customPolicies: []
+  # Exemplo:
+  # customPolicies:
+  #   - name: allow-metrics-extra
+  #     type: ingressNamespaces
+  #     namespaces: ["observability"]
+  #     ports: [9091]
+  #   - name: allow-api-externa
+  #     type: egressEndpoints
+  #     endpoints: ["api.exemplo.com", "1.2.3.4"]
+  #     defaultPorts: [443]
+  #   - name: allow-pagamentos-externo
+  #     type: egressEndpoints
+  #     endpoints: ["payments.exemplo.com"]
+  #   - name: allow-fraude-externo
+  #     type: egressEndpoints
+  #     endpoints: ["fraud.exemplo.com"]
 
 gatewayNamespace: "gateway-system"

@@ -1,0 +1,52 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.allowIngressFromCIDRs | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-ingress-from-cidrs-%d" (add1 $i)) -}}
+{{- $cidrs := $p.cidrs | default list -}}
+{{- if not $cidrs -}}
+{{- fail (printf "networkPolicies.allowIngressFromCIDRs.policies[%d].cidrs e obrigatorio" $i) -}}
+{{- end -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow ingress from specific CIDRs"
+  endpointSelector: {}
+  ingress:
+    - fromCIDRSet:
+{{- range $c := $cidrs }}
+        - cidr: {{ $c | quote }}
+{{- end }}
+{{- end }}
+{{- else if $cfg.enabled -}}
+{{- $cidrs := $cfg.cidrs | default list -}}
+{{- if not $cidrs -}}
+{{- fail "networkPolicies.allowIngressFromCIDRs.enabled=true requer pelo menos um CIDR em networkPolicies.allowIngressFromCIDRs.cidrs" -}}
+{{- end -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-from-cidrs
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "allow-ingress-from-cidrs"
+spec:
+  description: "Allow ingress from specific CIDRs"
+  endpointSelector: {}
+  ingress:
+    - fromCIDRSet:
+{{- range $c := $cidrs }}
+        - cidr: {{ $c | quote }}
+{{- end }}
+{{- end }}

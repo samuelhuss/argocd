@@ -1,0 +1,54 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.allowIngressFromNamespaces | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-ingress-from-namespaces-%d" (add1 $i)) -}}
+{{- $namespaces := $p.namespaces | default list -}}
+{{- if not $namespaces -}}
+{{- fail (printf "networkPolicies.allowIngressFromNamespaces.policies[%d].namespaces e obrigatorio" $i) -}}
+{{- end -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow cross-namespace ingress from selected namespaces"
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+{{- range $sourceNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $sourceNs | quote }}
+{{- end }}
+{{- end }}
+{{- else if $cfg.enabled -}}
+{{- $namespaces := $cfg.namespaces | default list -}}
+{{- if not $namespaces -}}
+{{- fail "networkPolicies.allowIngressFromNamespaces.enabled=true requer pelo menos um namespace em networkPolicies.allowIngressFromNamespaces.namespaces" -}}
+{{- end -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-from-namespaces
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "allow-ingress-from-namespaces"
+spec:
+  description: "Allow cross-namespace ingress from selected namespaces"
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+{{- range $sourceNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $sourceNs | quote }}
+{{- end }}
+{{- end }}

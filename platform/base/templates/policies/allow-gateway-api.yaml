@@ -1,12 +1,43 @@
-{{- if .Values.networkPolicies.allowGatewayAPI -}}
 {{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $policies := .Values.networkPolicies.allowGatewayAPIPolicies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-gateway-api-%d" (add1 $i)) -}}
+{{- $sourceNs := $p.namespace | default $root.Values.gatewayNamespace -}}
+{{- $ports := $p.ports | default (list 8080 8443) -}}
+{{- $protocol := $p.protocol | default "TCP" -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow ingress from Gateway API controller"
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $sourceNs | quote }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{- end }}
+{{- end }}
+{{- else if .Values.networkPolicies.allowGatewayAPI -}}
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: allow-gateway-api
   namespace: {{ $ns }}
   labels:
-    {{- include "ns.labels" . | nindent 4 }}
+    {{- include "ns.labels" $root | nindent 4 }}
     claro.com.br/policy-name: "allow-gateway-api"
 spec:
   description: "Allow ingress from Gateway API controller"
