@@ -10,4 +10,7 @@ metadata:
 spec:
   description: "Default deny — bloqueia todo ingress"
   endpointSelector: {}
-  ingress: []
+  ingressDeny:
+    - {}
+  egressDeny:
+    - {}
