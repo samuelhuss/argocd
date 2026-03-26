@@ -16,7 +16,7 @@ metadata:
   namespace: {{ $ns }}
   labels:
     {{- include "ns.labels" $root | nindent 4 }}
-    claro.com.br/policy-name: allow-common-egress
+    claro.com.br/policy-name: "allow-common-egress"
 spec:
   description: "Allow egress to internet on common ports"
   endpointSelector: {}
