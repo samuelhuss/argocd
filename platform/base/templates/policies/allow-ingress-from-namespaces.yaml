@@ -18,7 +18,7 @@ metadata:
   namespace: {{ $ns }}
   labels:
     {{- include "ns.labels" $root | nindent 4 }}
-    claro.com.br/policy-name: {{ $name | quote }}
+    claro.com.br/policy-name: "allow-ingress-from-namespaces"
 spec:
   description: "Allow cross-namespace ingress from selected namespaces"
   endpointSelector: {}
