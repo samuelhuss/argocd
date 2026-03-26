@@ -12,7 +12,7 @@ networkPolicies:
   #     namespace: gateway-system
 
   allowCommonEgress:
-    enabled: false
+    enabled: true
     policies: []
 
   allowEgress:
