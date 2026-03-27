@@ -1,0 +1,59 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.custom | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "custom-policy-%d" (add1 $i)) -}}
+{{- $direction := lower ($p.direction | default ($cfg.direction | default "egress")) -}}
+{{- if ne $direction "egress" -}}
+{{- fail (printf "networkPolicies.custom.policies[%d].direction deve ser egress para type=egressEndpoints" $i) -}}
+{{- end -}}
+{{- $type := $p.type | default "egressEndpoints" -}}
+{{- $ports := $p.ports | default (list 443) -}}
+{{- $protocol := $p.protocol | default "TCP" -}}
+{{- if eq $type "egressEndpoints" -}}
+{{- $endpoints := $p.endpoints | default (list) -}}
+{{- if not $endpoints -}}
+{{- fail (printf "networkPolicies.custom.policies[%d].endpoints eh obrigatorio para type=egressEndpoints" $i) -}}
+{{- end -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: {{ $p.description | default "Custom egress policy" | quote }}
+  endpointSelector: {}
+  egress:
+{{- range $endpoint := $endpoints }}
+{{- if contains "/" $endpoint }}
+    - toEndpoints: []
+      toCIDRSet:
+        - cidr: {{ $endpoint }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{- end }}
+{{- else }}
+    - toEndpoints: []
+      toFQDNs:
+        - matchName: {{ $endpoint | quote }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else -}}
+{{- fail (printf "networkPolicies.custom.policies[%d].type=%s nao suportado" $i $type) -}}
+{{- end }}
+{{- end }}

@@ -1,0 +1,64 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.internet | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-internet-%d" (add1 $i)) -}}
+{{- $direction := lower ($p.direction | default ($cfg.direction | default "egress")) -}}
+{{- if ne $direction "egress" -}}
+{{- fail (printf "networkPolicies.internet.policies[%d].direction deve ser egress" $i) -}}
+{{- end -}}
+{{- $ports := $p.ports | default (list 443 80) -}}
+{{- $protocol := $p.protocol | default "TCP" -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow unrestricted egress to the internet"
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{- end }}
+{{- end }}
+{{- else if $cfg.enabled -}}
+{{- $direction := lower ($cfg.direction | default "egress") -}}
+{{- if ne $direction "egress" -}}
+{{- fail "networkPolicies.internet.direction deve ser egress" -}}
+{{- end -}}
+{{- $ports := $cfg.ports | default (list 443 80) -}}
+{{- $protocol := $cfg.protocol | default "TCP" -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-internet
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: "allow-internet"
+spec:
+  description: "Allow unrestricted egress to the internet"
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{- end }}
+{{- end }}

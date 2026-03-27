@@ -1,0 +1,111 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.internal | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-internal-%d" (add1 $i)) -}}
+{{- $direction := lower ($p.direction | default ($cfg.direction | default "ingress")) -}}
+{{- if and (ne $direction "ingress") (ne $direction "egress") (ne $direction "both") -}}
+{{- fail (printf "networkPolicies.internal.policies[%d].direction deve ser ingress, egress ou both" $i) -}}
+{{- end -}}
+{{- $namespaces := $p.namespaces | default list -}}
+{{- if eq (len $namespaces) 0 -}}
+{{- if eq $direction "ingress" -}}
+{{- $sourceNs := $p.source | default "" -}}
+{{- if $sourceNs -}}
+{{- $namespaces = list $sourceNs -}}
+{{- end -}}
+{{- else if eq $direction "egress" -}}
+{{- $destinationNs := $p.destination | default "" -}}
+{{- if $destinationNs -}}
+{{- $namespaces = list $destinationNs -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if eq (len $namespaces) 0 -}}
+{{- fail (printf "networkPolicies.internal.policies[%d].namespaces e obrigatorio" $i) -}}
+{{- end -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow cross-namespace traffic with configurable direction"
+  endpointSelector: {}
+{{- if or (eq $direction "ingress") (eq $direction "both") }}
+  ingress:
+    - fromEndpoints:
+{{- range $sourceNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $sourceNs | quote }}
+{{ end }}
+{{- if $p.ports }}
+      toPorts:
+        - ports:
+{{- range $port := $p.ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $p.protocol | default "TCP" | upper | quote }}
+{{ end }}
+{{ end }}
+{{ end }}
+{{- if or (eq $direction "egress") (eq $direction "both") }}
+  egress:
+    - toEndpoints:
+{{- range $destinationNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $destinationNs | quote }}
+{{ end }}
+{{- if $p.ports }}
+      toPorts:
+        - ports:
+{{- range $port := $p.ports }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $p.protocol | default "TCP" | upper | quote }}
+{{ end }}
+{{ end }}
+{{ end }}
+{{ end }}
+{{- else if $cfg.enabled -}}
+{{- $namespaces := $cfg.namespaces | default list -}}
+{{- $direction := lower ($cfg.direction | default "ingress") -}}
+{{- if and (ne $direction "ingress") (ne $direction "egress") (ne $direction "both") -}}
+{{- fail "networkPolicies.internal.direction deve ser ingress, egress ou both" -}}
+{{- end -}}
+{{- if eq (len $namespaces) 0 -}}
+{{- fail "networkPolicies.internal.enabled=true requer pelo menos um namespace em networkPolicies.internal.namespaces" -}}
+{{- end -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-internal
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "allow-internal"
+spec:
+  description: "Allow cross-namespace traffic with configurable direction"
+  endpointSelector: {}
+{{- if or (eq $direction "ingress") (eq $direction "both") }}
+  ingress:
+    - fromEndpoints:
+{{- range $sourceNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $sourceNs | quote }}
+{{ end }}
+{{ end }}
+{{- if or (eq $direction "egress") (eq $direction "both") }}
+  egress:
+    - toEndpoints:
+{{- range $destinationNs := $namespaces }}
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $destinationNs | quote }}
+{{ end }}
+{{ end }}
+{{ end }}

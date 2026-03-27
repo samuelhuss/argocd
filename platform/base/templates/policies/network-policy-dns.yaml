@@ -1,0 +1,120 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.dns | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if gt (len $policies) 0 }}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-dns-%d" (add1 $i)) -}}
+{{- $direction := lower ($p.direction | default ($cfg.direction | default "egress")) -}}
+{{- if ne $direction "egress" -}}
+{{- fail (printf "networkPolicies.dns.policies[%d].direction deve ser egress" $i) -}}
+{{- end -}}
+{{- $endpoints := $p.endpoints | default list -}}
+{{- $dnsNamespace := $p.namespace | default ($cfg.namespace | default "kube-system") -}}
+{{- $dnsPodLabels := $p.podLabels | default ($cfg.podLabels | default (dict "k8s-app" "kube-dns")) -}}
+{{- $ports := $p.ports | default (list 53) -}}
+{{- $protocols := $p.protocols | default ($cfg.protocols | default (list ($p.protocol | default ($cfg.protocol | default "UDP")))) -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow DNS queries"
+  endpointSelector: {}
+  egress:
+{{- if gt (len $endpoints) 0 }}
+{{- range $endpoint := $endpoints }}
+{{- $cidr := $endpoint -}}
+{{- if not (contains "/" $endpoint) -}}
+{{- $cidr = printf "%s/32" $endpoint -}}
+{{- end }}
+    - toCIDRSet:
+        - cidr: {{ $cidr | quote }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+{{- range $proto := $protocols }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $proto | upper | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else }}
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $dnsNamespace | quote }}
+{{- range $key, $value := $dnsPodLabels }}
+            {{ $key }}: {{ $value | quote }}
+{{- end }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+{{- range $proto := $protocols }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $proto | upper | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else if $cfg.enabled }}
+{{- $direction := lower ($cfg.direction | default "egress") -}}
+{{- if ne $direction "egress" -}}
+{{- fail "networkPolicies.dns.direction deve ser egress" -}}
+{{- end -}}
+{{- $endpoints := $cfg.endpoints | default list -}}
+{{- $dnsNamespace := $cfg.namespace | default "kube-system" -}}
+{{- $dnsPodLabels := $cfg.podLabels | default (dict "k8s-app" "kube-dns") -}}
+{{- $ports := $cfg.ports | default (list 53) -}}
+{{- $protocols := $cfg.protocols | default (list ($cfg.protocol | default "UDP")) -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: "allow-dns"
+spec:
+  description: "Allow DNS queries"
+  endpointSelector: {}
+  egress:
+{{- if gt (len $endpoints) 0 }}
+{{- range $endpoint := $endpoints }}
+{{- $cidr := $endpoint -}}
+{{- if not (contains "/" $endpoint) -}}
+{{- $cidr = printf "%s/32" $endpoint -}}
+{{- end }}
+    - toCIDRSet:
+        - cidr: {{ $cidr | quote }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+{{- range $proto := $protocols }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $proto | upper | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else }}
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $dnsNamespace | quote }}
+{{- range $key, $value := $dnsPodLabels }}
+            {{ $key }}: {{ $value | quote }}
+{{- end }}
+      toPorts:
+        - ports:
+{{- range $port := $ports }}
+{{- range $proto := $protocols }}
+            - port: {{ printf "%v" $port | quote }}
+              protocol: {{ $proto | upper | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -6,119 +6,168 @@ environment: "dev"        # dev | staging | production
 costCenter: ""            # ex: cc-12345
 
 # ── Network Policies ─────────────────────────────────────────────────────
+# Separado por tipo: internal, external, gateway, observability, dns, internet, custom
+# Cada um com toggle "enabled" e suporte a multiplas "policies"
 networkPolicies:
-  allowGatewayAPI: false  # toggle — habilite se precisa receber tráfego via Gateway API
-  # Modo avancado opcional para multiplas policies de Gateway API:
-  allowGatewayAPIPolicies: []
-  # Exemplo:
-  # allowGatewayAPIPolicies:
-  #   - name: allow-gateway-api-public
-  #     namespace: gateway-system
-  #   - name: allow-gateway-api-internal
-  #     namespace: gateway-internal
-  #     ports: [8080]
-
-  # Modo simples: libera egress para internet em portas comuns (toEntities: world)
-  # Para a maioria dos casos, basta ligar enabled.
-  allowCommonEgress:
+  
+  # ════════════════════════════════════════════════════════════════════════
+  # INTERNAL: Cross-namespace (ingress from other namespaces)
+  # ════════════════════════════════════════════════════════════════════════
+  internal:
     enabled: false
-    ports: [443]
-    protocol: TCP
+    direction: ingress
+    # Namespace padrão (usado se enabled=true)
+    namespaces: []
+    # Ou adicionar multiplas policies customizadas:
     policies: []
     # Exemplo:
     # policies:
-    #   - name: allow-common-egress-web
-    #     ports: [80, 443]
+    #   - name: allow-ingress-from-auth
+    #     direction: ingress
+    #     source: auth-system
+    #     namespaces: ["auth-system"]
+    #     ports: [8000]
+    #   - name: allow-egress-to-shared
+    #     direction: egress
+    #     destination: shared-services
+    #     ports: [8080, 8443]
 
-  # Permite egress para endpoints externos especificos (FQDN/CIDR/IP)
-  allowEgress:
+  # ════════════════════════════════════════════════════════════════════════
+  # EXTERNAL: APIs, FQDNs, IPs, CIDRs (auto-detect type)
+  # ════════════════════════════════════════════════════════════════════════
+  external:
     enabled: false
+    direction: egress
     defaultPorts: [443]
     protocol: TCP
+    # Endpoints padrão (usado se enabled=true)
     endpoints: []
+    # Ou multiplas policies:
+    policies: []
     # Exemplo:
-    # endpoints:
-    #   - "api.exemplo.com"
-    #   - "1.2.3.4"
-    #   - "10.20.30.0/24"
-    # Ou modo avancado por item:
-    #   - endpoint: api.exemplo.com
-    #     type: fqdn   # opcional: fqdn|ip|cidr (auto-detect se omitir)
+    # policies:
+    #   - name: allow-egress-pagamentos-api
+    #     direction: egress
+    #     endpoints: ["api.pagamentos.com", "webhooks.pagamentos.com"]
     #     ports: [443]
-    #     protocol: TCP
-    # Opcional: multiplas policies separadas (1 item = 1 CiliumNetworkPolicy)
+    #   - name: allow-ingress-corp-vpn
+    #     direction: ingress
+    #     endpoints: ["10.20.0.0/24"]
+    #     ports: [8443]
+
+  # ════════════════════════════════════════════════════════════════════════
+  # GATEWAY: Ingress from Gateway API / Ingress Controller
+  # ════════════════════════════════════════════════════════════════════════
+  gateway:
+    enabled: false
+    direction: ingress
+    # Namespace padrão (usado se enabled=true)
+    namespace: ""  # ex: gateway-system
+    ports: [8080, 8443]
+    protocol: TCP
+    # Ou multiplas policies:
     policies: []
     # Exemplo:
     # policies:
-    #   - name: allow-egress-pagamentos
-    #     endpoints: ["payments.exemplo.com"]
-    #   - name: allow-egress-fraude
-    #     endpoints: ["fraud.exemplo.com"]
+    #   - name: allow-ingress-from-gateway
+    #     direction: ingress
+    #     namespace: gateway-system
+    #     ports: [8080, 8443]
+    #   - name: allow-ingress-from-istio
+    #     namespace: istio-system
+    #     ports: [8080]
 
-  # Permite comunicacao cross-namespace a partir de namespaces especificos
-  allowIngressFromNamespaces:
+  # ════════════════════════════════════════════════════════════════════════
+  # OBSERVABILITY: Prometheus scrape + Loki/Jaeger logs/traces
+  # ════════════════════════════════════════════════════════════════════════
+  observability:
     enabled: false
-    namespaces: []
-    policies: []
-    # Exemplo:
-    # namespaces: ["gateway-system", "shared-services"]
-    # policies:
-    #   - name: allow-ingress-shared
-    #     namespaces: ["shared-services"]
-    #   - name: allow-ingress-observability
-    #     namespaces: ["observability"]
-
-  # Permite ingress de CIDRs especificos
-  allowIngressFromCIDRs:
-    enabled: false
-    cidrs: []
-    policies: []
-    # Exemplo:
-    # cidrs: ["10.0.0.0/8", "192.168.10.0/24"]
-    # policies:
-    #   - name: allow-vpn
-    #     cidrs: ["10.10.0.0/16"]
-    #   - name: allow-corp-proxy
-    #     cidrs: ["172.20.100.10/32"]
-
-  # Preset para observabilidade: libera scrape de metricas do namespace de observability
-  allowObservabilityMetrics:
-    enabled: false
+    direction: ingress
+    # Namespace padrão (usado se enabled=true)
     namespace: observability
     ports: [9090]
     protocol: TCP
+    # Ou multiplas policies:
     policies: []
     # Exemplo:
     # policies:
-    #   - name: allow-metrics-observability
+    #   - name: allow-ingress-prometheus
+    #     direction: ingress
     #     namespace: observability
     #     ports: [9090]
-    #   - name: allow-metrics-sre
-    #     namespace: sre-observability
-    #     ports: [9090, 9100]
+    #   - name: allow-egress-loki
+    #     direction: egress
+    #     namespace: observability
+    #     ports: [3100]
 
-  # Modo custom simples (sem escrever YAML completo de Cilium)
-  # Cada item da lista gera 1 CiliumNetworkPolicy separada.
-  # Tipos suportados:
-  # - ingressNamespaces: exige namespaces
-  # - ingressCIDRs: exige cidrs
-  # - egressEndpoints: exige endpoints (FQDN/IP/CIDR)
-  customPolicies: []
-  # Exemplo:
-  # customPolicies:
-  #   - name: allow-metrics-extra
-  #     type: ingressNamespaces
-  #     namespaces: ["observability"]
-  #     ports: [9091]
-  #   - name: allow-api-externa
-  #     type: egressEndpoints
-  #     endpoints: ["api.exemplo.com", "1.2.3.4"]
-  #     defaultPorts: [443]
-  #   - name: allow-pagamentos-externo
-  #     type: egressEndpoints
-  #     endpoints: ["payments.exemplo.com"]
-  #   - name: allow-fraude-externo
-  #     type: egressEndpoints
-  #     endpoints: ["fraud.exemplo.com"]
+  # ════════════════════════════════════════════════════════════════════════
+  # DNS: Specific DNS servers (port 53)
+  # ════════════════════════════════════════════════════════════════════════
+  dns:
+    enabled: true
+    direction: egress
+    # Default: libera DNS interno do cluster (kube-dns/coredns)
+    namespace: kube-system
+    podLabels:
+      k8s-app: kube-dns
+    # DNS servers opcionais por IP/CIDR (se informado, usa estes em vez do selector acima)
+    endpoints: []
+    ports: [53]
+    protocols: [UDP, TCP]
+    # Ou multiplas policies:
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-dns-cluster
+    #     direction: egress
+    #     namespace: kube-system
+    #     podLabels:
+    #       k8s-app: kube-dns
+    #   - name: allow-dns-google
+    #     direction: egress
+    #     endpoints: ["8.8.8.8", "8.8.4.4"]
+    #     ports: [53]
+    #     protocols: [UDP, TCP]
+    #   - name: allow-dns-corp
+    #     direction: egress
+    #     endpoints: ["10.0.0.1", "10.0.0.2"]
+    #     ports: [53]
+
+  # ════════════════════════════════════════════════════════════════════════
+  # INTERNET: Unrestricted egress to world (use with caution!)
+  # ════════════════════════════════════════════════════════════════════════
+  internet:
+    enabled: false
+    direction: egress
+    ports: [443, 80]
+    protocol: TCP
+    # Ou multiplas policies:
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-egress-https
+    #     direction: egress
+    #     ports: [443]
+    #   - name: allow-egress-http
+    #     ports: [80]
+
+  # ════════════════════════════════════════════════════════════════════════
+  # CUSTOM: Any custom case not covered above
+  # ════════════════════════════════════════════════════════════════════════
+  custom:
+    enabled: false
+    policies: []
+    # Exemplo:
+    # policies:
+    #   - name: allow-loki-egress
+    #     direction: egress
+    #     type: egressEndpoints
+    #     endpoints: ["loki.observability.svc.cluster.local"]
+    #     ports: [3100]
+    #   - name: allow-mongodb-atlas
+    #     direction: egress
+    #     type: egressEndpoints
+    #     endpoints: ["cluster0.mongodb.net"]
+    #     ports: [27017]
 
 gatewayNamespace: "gateway-system"

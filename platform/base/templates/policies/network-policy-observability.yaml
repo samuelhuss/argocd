@@ -1,0 +1,96 @@
+{{- $ns := include "ns.name" . -}}
+{{- $root := . -}}
+{{- $np := .Values.networkPolicies | default dict -}}
+{{- $cfg := $np.observability | default dict -}}
+{{- $policies := $cfg.policies | default list -}}
+{{- if $policies -}}
+{{- range $i, $p := $policies }}
+{{- $name := $p.name | default (printf "allow-observability-%d" (add1 $i)) -}}
+{{- $direction := lower ($p.direction | default ($cfg.direction | default "ingress")) -}}
+{{- if and (ne $direction "ingress") (ne $direction "egress") (ne $direction "both") -}}
+{{- fail (printf "networkPolicies.observability.policies[%d].direction deve ser ingress, egress ou both" $i) -}}
+{{- end -}}
+{{- $peerNs := $p.namespace | default ($p.source | default ($p.destination | default ($cfg.namespace | default "observability"))) -}}
+{{- $ports := $p.ports | default ($cfg.ports | default (list 9090)) -}}
+{{- $protocol := $p.protocol | default ($cfg.protocol | default "TCP") -}}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" $root | nindent 4 }}
+    claro.com.br/policy-name: {{ $name | quote }}
+spec:
+  description: "Allow observability traffic with configurable direction"
+  endpointSelector: {}
+{{- if or (eq $direction "ingress") (eq $direction "both") }}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $peerNs | quote }}
+      toPorts:
+        - ports:
+{{- range $p := $ports }}
+            - port: {{ printf "%v" $p | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{ end }}
+{{ end }}
+{{- if or (eq $direction "egress") (eq $direction "both") }}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $peerNs | quote }}
+      toPorts:
+        - ports:
+{{- range $p := $ports }}
+            - port: {{ printf "%v" $p | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{ end }}
+{{ end }}
+{{ end }}
+{{- else if $cfg.enabled -}}
+{{- $direction := lower ($cfg.direction | default "ingress") -}}
+{{- if and (ne $direction "ingress") (ne $direction "egress") (ne $direction "both") -}}
+{{- fail "networkPolicies.observability.direction deve ser ingress, egress ou both" -}}
+{{- end -}}
+{{- $peerNs := $cfg.namespace | default "observability" -}}
+{{- $ports := $cfg.ports | default (list 9090) -}}
+{{- $protocol := $cfg.protocol | default "TCP" -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-observability
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ns.labels" . | nindent 4 }}
+    claro.com.br/policy-name: "allow-observability"
+spec:
+  description: "Allow observability traffic with configurable direction"
+  endpointSelector: {}
+{{- if or (eq $direction "ingress") (eq $direction "both") }}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $peerNs | quote }}
+      toPorts:
+        - ports:
+{{- range $p := $ports }}
+            - port: {{ printf "%v" $p | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{ end }}
+{{ end }}
+{{- if or (eq $direction "egress") (eq $direction "both") }}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ $peerNs | quote }}
+      toPorts:
+        - ports:
+{{- range $p := $ports }}
+            - port: {{ printf "%v" $p | quote }}
+              protocol: {{ $protocol | upper | quote }}
+{{ end }}
+{{ end }}
+{{ end }}
