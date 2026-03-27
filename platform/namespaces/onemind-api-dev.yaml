@@ -1,0 +1,70 @@
+team: "onemind"
+owner: "onemind-claro.com.br"
+project: "api"
+environment: "dev"
+costCenter: "finops-b2c"
+
+networkPolicies:
+  gateway:
+    enabled: false
+    policies:
+      - name: allow-ingress-from-gateway
+        direction: ingress
+        source: gateway-system
+        ports: [8080, 8443]
+
+  internal:
+    enabled: true
+    policies:
+      - name: allow-ingress-from-payments
+        direction: ingress
+        source: auth-system
+        ports: [80]
+      - name: allow-egress-to-shared-services
+        direction: egress
+        destination: shared-services
+        ports: [6379]
+
+  external:
+    enabled: true
+    policies:
+      - name: allow-egress-banco-api
+        direction: egress
+        endpoints: ["ifconfig.me"]
+        ports: [443]
+
+  observability:
+    enabled: true
+    policies:
+      - name: allow-ingress-prometheus
+        direction: ingress
+        source: observability
+        ports: [9090]
+      - name: allow-egress-loki
+        direction: egress
+        destination: observability
+        ports: [3100]
+      - name: allow-egress-jaeger
+        direction: egress
+        destination: observability
+        ports: [4317, 4318]
+
+  dns:
+    enabled: true
+    # Default do chart: kube-system + k8s-app=kube-dns, portas 53 UDP/TCP.
+    # Se precisar DNS corporativo em vez do DNS interno, use policies:
+
+
+  internet:
+    enabled: false
+
+  custom:
+    enabled: false
+    policies:
+      - name: allow-egress-mongodb-atlas
+        direction: egress
+        type: egressEndpoints
+        endpoints: ["cluster0.mongodb.net"]
+        ports: [27017]
+
+gatewayNamespace: "gateway-system"
