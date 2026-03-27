@@ -1,23 +1,23 @@
-{{- $ns := include "ns.name" . -}}
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-dns
-  namespace: {{ $ns }}
-  labels:
-    {{- include "ns.labels" . | nindent 4 }}
-    claro.com.br/policy-name: "allow-dns"    
-spec:
-  description: "Allow DNS resolution (UDP/TCP 53)"
-  endpointSelector: {}
-  egress:
-    - toEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-            - port: "53"
-              protocol: TCP
+# {{- $ns := include "ns.name" . -}}
+# apiVersion: cilium.io/v2
+# kind: CiliumNetworkPolicy
+# metadata:
+#   name: allow-dns
+#   namespace: {{ $ns }}
+#   labels:
+#     {{- include "ns.labels" . | nindent 4 }}
+#     claro.com.br/policy-name: "allow-dns"    
+# spec:
+#   description: "Allow DNS resolution (UDP/TCP 53)"
+#   endpointSelector: {}
+#   egress:
+#     - toEndpoints:
+#         - matchLabels:
+#             io.kubernetes.pod.namespace: kube-system
+#             k8s-app: kube-dns
+#       toPorts:
+#         - ports:
+#             - port: "53"
+#               protocol: UDP
+#             - port: "53"
+#               protocol: TCP
